@@ -1,0 +1,5 @@
+Building IoP
+
+See doc/build-*.md for instructions on building IoPd,
+the intended-for-services, no-graphical-interface, reference
+implementation of IoP.
