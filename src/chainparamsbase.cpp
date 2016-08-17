@@ -32,6 +32,10 @@ class CBaseMainParams : public CBaseChainParams
 public:
     CBaseMainParams()
     {
+    	/**
+    	 * IoP change by Rodrigo Acosta
+    	 * changed default RPC port for RPC commands in all networks.
+    	 */
         nRPCPort = 8337;
     }
 };

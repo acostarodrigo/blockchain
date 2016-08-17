@@ -1698,6 +1698,10 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     if (halvings >= 64)
         return 0;
 
+    /**
+     * IoP change by Rodrigo Acosta
+     * Change amount of block generation if block height is 1. The first mined block will generate 2100000 IoP as a premine.
+     */
     CAmount nSubsidy = (nHeight == 1 ? 2100000 : 50) * COIN;
     // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
     nSubsidy >>= halvings;
