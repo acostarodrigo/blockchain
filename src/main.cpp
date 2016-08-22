@@ -38,6 +38,8 @@
 #include "validationinterface.h"
 #include "versionbits.h"
 
+#include <string>
+
 #include <atomic>
 #include <sstream>
 
@@ -3364,6 +3366,7 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const 
     return true;
 }
 
+
 bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW, bool fCheckMerkleRoot)
 {
     // These are checks that are independent of context.
@@ -3403,9 +3406,61 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // First transaction must be coinbase, the rest must not be
     if (block.vtx.empty() || !block.vtx[0].IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
+
     for (unsigned int i = 1; i < block.vtx.size(); i++)
         if (block.vtx[i].IsCoinBase())
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
+
+    /**
+	 * IoP change by Rodrigo Acosta
+	 * At a initial stage, we are only accepting blocks generating from some miners. We are validating this by checking the hash
+	 * of the script of the coinbase output.
+	 *
+	 */
+    if (true){
+    	// form the list of authorized pub scripts.
+    	std::set<std::string> ValidValues {
+    	        	"4104ce49f9cdc8d23176c818fd7e27e7b614d128a47acfdad0e4542300e7efbd8879f1337af3188c0dcb0747fdf26d0cb3b0fca0f4e5d7aec53c43f4a933f570ae86ac", //genesis PubKeyScript
+    	        	"210365d7f9bb6058abf1289aa2301cb872fb17da5f52c7709c69691b22d3e1e94dfeac", // premine public key script
+					"51", //getblocktemplate
+					//miners
+					"76a914c0f58b0fa1e8130e8f04af62f90893e5db22189b88ac", "76a91463b11a380a565aa7437162fcbf510bcf6fa1f24688ac",
+					"76a9148ee5b5fc1b645d780f174947fb978380bcf5c84588ac", "76a914cb30dba1e92ae6c23119b87de6b91fb3063a867488ac",
+					"76a914502274435fd2c682e7f36ec1539afba8053787e188ac", "76a914f3408299d3c60cc3ad6669d13160e59a5e5af04388ac",
+					"76a914eca51f625d64f9623e0f7ef0befe7e60ab373e3a88ac", "76a9143ea7225e5ad420fe62fc82d44d179bfeff678b5b88ac",
+					"76a91429b2fc7e251ad12764c2c3d9f244ca3146e1670188ac", "76a914fed38b96ce23f6f0eb04f1fa5701e17408aa5a7d88ac",
+					"76a91474b0bab94828a52deb55b57ebfb88acd051e2a0b88ac", "76a9144d78ef101fc9bf41dc48dbb3e66b2d1372f41cf788ac",
+					"76a914c2b297c188674c7fa35a2bca9688d0b66069bbb488ac", "76a9148c403ab7afb587973604c34e46dd834cd8674a4b88ac",
+					"76a914cea2351c5478341780741d5f418696412a49ca2b88ac", "76a914500005f4dd19b7f964dbc4a97dabf53d7fb9a6fc88ac",
+					"76a9142cda373160b1b8d9800458aef2822b31ccfac4e388ac", "76a91480f5e2803f0f2d7dc0c3f7210eda146677f3f46b88ac",
+					"76a914c903327dd7e3fb0fe4e98576a024a98567a25c5788ac", "76a914022378692e6f68934dc333bfb793b5735547374e88ac",
+					"76a914f37debb0645d9db9626d073a9d5df4feef6877b088ac", "76a914d021a1a56576d6e02b41ba2ddd63b05230c9aed788ac",
+					"76a91490201ab4c16c59a2b96a1ceba52e09b3efdabbbe88ac", "76a914fe25b8db82e082ac76209b8c93e4145c9742d9a788ac",
+					"76a914e4c2c5d18708183180a0a882d3c687d786d6e7f088ac", "76a914e50375f387acf4ec3811b72c330bceed417a52bd88ac",
+					"76a91465d5be7a7b1c5d54048ced16a04a080dc910dc4688ac", "76a914bc0b28dffba1e5d7aa4dd1fe232852e742a512ad88ac",
+					"76a914be2e72081d1385b19ac44ab38b22cc6247073e7088ac", "76a914adf3ed3242d5ebea8b0c4db82f36f24a350bc21788ac",
+					"76a91485574f103de99e1ed361f2609dda04b914a0b89a88ac", "76a914fcb499048a300c25b94474be8a4eee3bc6fc611288ac",
+					"76a9146b661db67710637314b60a322a84336e0a37630c88ac", "76a914f07d4bb29365eae8d0e454a21553e825e962252288ac",
+					"76a9143135d6db1cf0cb20cb5afa4a40320a979355b0c888ac", "76a914b1b2fd54024b8c2080614a709fad293bd31816ca88ac",
+					"76a914fbbd650cf5f568191e48cb0ae45c46c98ce70fd988ac", "76a91459cefd0c2a474f7bf4cf67f96bdcfe2cdf14a7b788ac",
+					"76a91458fb76c55c090a2fdc09d7af67e8d463719493b188ac", "76a914c93030a3d1c3f17e5437bd9d52a52219936ca01c88ac",
+					"76a9149af05067862d5be4a46581b942ccbad8b86b520888ac", "76a91405007c3c152b5baac0831918f2290d71088de5dd88ac",
+					"76a9142c6d6fee7aa34b32a75bb86d9dec0a125ebe066c88ac", "76a9145707e1dbc9ed80ac9ab34289f9c03957a8ea077f88ac",
+					"76a91404ab00d9d93c0ad826c7d78ebf6a1aad6efc9b1688ac", "76a91468d639384daa0a0534d34c3063251892d35d484a88ac",
+					"76a914fea9fb3382c3c1c38407eaf91cc319c493006fdf88ac", "76a91466ee24ef5950b5e6467ee6cc52e5865ad746d4f188ac",
+					"76a91445c5796b65842cdb9c7a4b190159047000eaaa6288ac",
+    	        };
+
+    	    // compare against the Coinbase transaction output script hash
+    	    if( ValidValues.count(HexStr(block.vtx[0].vout[0].scriptPubKey)))
+    	    		ValidValues.end();
+    	    else{
+    	    	// if output script of coinbase is not within accepted public keys we are not accepting it.
+				LogPrint("Invalid coinbase scriptPubKey on output", "scriptPubKey: %s \n", HexStr(block.vtx[0].vout[0].scriptPubKey));
+				return state.DoS(100, false, REJECT_INVALID, "bad-cb-address", false, "coinbase is not from an accepted miner");
+    	    }
+    }
+
 
     // Check transactions
     BOOST_FOREACH(const CTransaction& tx, block.vtx)
