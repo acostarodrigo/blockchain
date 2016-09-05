@@ -5,9 +5,22 @@
  *      Author: rodrigo
  */
 
+#include "hash.h"
+#include "clientversion.h"
+#include "chainparams.h"
 #include "minerwhitelist.h"
-#include "tinyformat.h"
+#include "random.h"
 #include "serialize.h"
+#include "stdio.h"
+#include "streams.h"
+#include "tinyformat.h"
+#include "util.h"
+#include <iostream>
+#include <fstream>
+
+
+#include <boost/filesystem.hpp>
+
 
 using namespace std;
 
@@ -18,46 +31,52 @@ using namespace std;
 // MinerWhiteList
 //
 CMinerWhiteList::CMinerWhiteList() {
-	pathMinerWhiteList = GetDataDir() / "MinerWhiteList.dat";
+	pathMinerWhiteList = GetDataDir() / "minerwhitelist.dat";
 }
 
-bool CMinerWhiteList::Write(std::string pkey) {
-	// Generate random temporary filename
-	unsigned short randv = 0;
-	GetRandBytes((unsigned char*) &randv, sizeof(randv));
-	std::string tmpfn = strprintf("minerwhitelist.dat.%04x", randv);
-
-	// serialize banlist, checksum data up to that point, then append csum
-	CDataStream ssMinerWhiteList(SER_DISK, CLIENT_VERSION);
-	ssMinerWhiteList << FLATDATA(Params().MessageStart());
-	ssMinerWhiteList << pkey;
-	uint256 hash = Hash(ssMinerWhiteList.begin(), ssMinerWhiteList.end());
-	ssMinerWhiteList << hash;
-
-	// open temp output file, and associate with CAutoFile
-	boost::filesystem::path pathTmp = GetDataDir() / tmpfn;
-	FILE *file = fopen(pathTmp.string().c_str(), "wb");
-	CAutoFile fileout(file, SER_DISK, CLIENT_VERSION);
-	if (fileout.IsNull())
-		return error("%s: Failed to open file %s", __func__, pathTmp.string());
-
-	// Write and commit header, data
-	try {
-		fileout << ssMinerWhiteList;
-	} catch (const std::exception& e) {
+bool CMinerWhiteList::Write(minerwhitelist_v minerwhitelist) {
+	/**
+	 * I'm writting plain text and not locking file or using temp files.
+	 * My original implementation using bitcoin code is not working properly. There is room for improvemente here.
+	 */
+	try{
+		ofstream file(pathMinerWhiteList.string().c_str());
+		for (unsigned int i=0; i < minerwhitelist.size();i++){
+			LogPrint("MinerWhiteListDB", "File write word: %s \n", minerwhitelist[i]);
+			file << minerwhitelist[i] << endl;
+		}
+		file.close();
+		return true;
+	} catch (const std::exception& e){
 		return error("%s: Serialize or I/O error - %s", __func__, e.what());
 	}
-	FileCommit(fileout.Get());
-	fileout.fclose();
-
-	// replace existing banlist.dat, if any, with new banlist.dat.XXXX
-	if (!RenameOver(pathTmp, pathMinerWhiteList))
-		return error("%s: Rename-into-place failed", __func__);
-
-	return true;
 }
 
-bool CMinerWhiteList::Read(std::string pkey) {
-	return true;
+minerwhitelist_v CMinerWhiteList::Read() {
+	/**
+	 * I'm reading plain data. My original copy from bitcoin code which added the hash of the current data to
+	 * verify if data was changed or corrupted is not working right. There is space to improve this.
+	 */
+	std::vector<std::string> pkeys;
+	try{
+		std::ifstream file(pathMinerWhiteList.string().c_str());
+
+		std::string pkey;
+		while (file >> pkey) {
+			pkeys.push_back(pkey);
+		}
+
+		file.close();
+	} catch (const std::exception& e){
+		//return error("%s: Serialize or I/O error - %s", __func__, e.what());
+	}
+
+	return pkeys;
 }
 
+bool CMinerWhiteList::Exist(std::string pkey){
+	std::vector<string> pkeys;
+	pkeys = Read();
+
+    return (std::find(pkeys.begin(), pkeys.end(), pkey) != pkeys.end());
+}

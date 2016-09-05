@@ -6,6 +6,8 @@
 
 #include <secp256k1.h>
 #include <secp256k1_recovery.h>
+/* rodrigo acosta */
+#include <util.h>
 
 namespace
 {
@@ -166,7 +168,8 @@ static int ecdsa_signature_parse_der_lax(const secp256k1_context* ctx, secp256k1
 
 bool CPubKey::Verify(const uint256 &hash, const std::vector<unsigned char>& vchSig) const {
     if (!IsValid())
-        return false;
+    	return false;
+
     secp256k1_pubkey pubkey;
     secp256k1_ecdsa_signature sig;
     if (!secp256k1_ec_pubkey_parse(secp256k1_context_verify, &pubkey, &(*this)[0], size())) {
@@ -181,6 +184,7 @@ bool CPubKey::Verify(const uint256 &hash, const std::vector<unsigned char>& vchS
     /* libsecp256k1's ECDSA verification requires lower-S signatures, which have
      * not historically been enforced in IoP, so normalize them first. */
     secp256k1_ecdsa_signature_normalize(secp256k1_context_verify, &sig, &sig);
+
     return secp256k1_ecdsa_verify(secp256k1_context_verify, &sig, hash.begin(), &pubkey);
 }
 

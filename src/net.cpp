@@ -2595,6 +2595,9 @@ void CNode::EndMessage(const char* pszCommand) UNLOCK_FUNCTION(cs_vSend)
     LEAVE_CRITICAL_SECTION(cs_vSend);
 }
 
+
+
+
 //
 // CBanDB
 //

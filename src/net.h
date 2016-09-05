@@ -770,6 +770,7 @@ public:
     static void GetBanned(banmap_t &banmap);
     static void SetBanned(const banmap_t &banmap);
 
+
     //!check is the banlist has unwritten changes
     static bool BannedSetIsDirty();
     //!set the "dirty" flag for the banlist
@@ -827,6 +828,8 @@ public:
     bool Read(CAddrMan& addr);
     bool Read(CAddrMan& addr, CDataStream& ssPeers);
 };
+
+
 
 /** Access to the banlist database (banlist.dat) */
 class CBanDB
