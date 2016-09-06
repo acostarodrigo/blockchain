@@ -42,7 +42,6 @@ bool CMinerWhiteList::Write(minerwhitelist_v minerwhitelist) {
 	try{
 		ofstream file(pathMinerWhiteList.string().c_str());
 		for (unsigned int i=0; i < minerwhitelist.size();i++){
-			LogPrint("MinerWhiteListDB", "File write word: %s \n", minerwhitelist[i]);
 			file << minerwhitelist[i] << endl;
 		}
 		file.close();

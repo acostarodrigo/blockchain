@@ -17,27 +17,37 @@
 #include "hash.h"
 #include "init.h"
 #include "merkleblock.h"
+
 /* IoP change by Rodrigo Acosta */
 #include "minerwhitelist.h"
+
 #include "net.h"
 #include "policy/fees.h"
 #include "policy/policy.h"
 #include "pow.h"
 #include "primitives/block.h"
 #include "primitives/transaction.h"
+
 /* IoP change by Rodrigo Acosta */
 #include "pubkey.h"
+
 #include "random.h"
+
 /* IoP change by Rodrigo Acosta */
 #include "script/interpreter.h"
+/* IoP change by Rodrigo Acosta */
+#include <script/interpreter.cpp>
+
 #include "script/script.h"
 #include "script/sigcache.h"
 #include "script/standard.h"
 #include "tinyformat.h"
 #include "txdb.h"
 #include "txmempool.h"
+
 /* IoP change by Rodrigo Acosta */
 #include "uint256.h"
+
 #include "ui_interface.h"
 #include "undo.h"
 #include "util.h"
@@ -45,9 +55,6 @@
 #include "utilstrencodings.h"
 #include "validationinterface.h"
 #include "versionbits.h"
-
-
-
 
 #include <string>
 #include <atomic>
@@ -2669,10 +2676,21 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
 		// we get the signature
 		const std::vector<unsigned char> signature = value;
+
+		if (!IsValidSignatureEncoding(value)){
+			LogPrint("Invalid coinbase transaction", "Provided signature is not valid: %s \n", HexStr(value));
+			return state.DoS(100, false, REJECT_INVALID, "bad-CB-signature", false, "Coinbase invalid signature");
+		}
+
+		//we remove the sig hash type from the end of the signature
+		vector<unsigned char> vchSig(value);
+		vchSig.back();
+		vchSig.pop_back();
+
+		// we get the public key
 		while (pc < scriptSig.end()){
 			scriptSig.GetOp(pc, opcode, value);
 		}
-		// we get the public key
 		const CPubKey pkey(value);
 
 		// make sure the public key is ok.
@@ -2684,16 +2702,15 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 		// verify the signature on the transaction hash without any input
 		CMutableTransaction mutableTx = tx;
 		mutableTx.vin[0].scriptSig.clear();
-		std::vector<unsigned char> vIoP = ParseHex("496f50");
+		std::vector<unsigned char> vIoP = ParseHex("496f50"); // "IoP" text is included in input. Miners must do the same.
 		CScript unScriptSig = CScript() << vIoP;
 		mutableTx.vin[0].scriptSig = unScriptSig;
 
 		CTransaction unTx = mutableTx;
+		const uint256 sigHash = unTx.GetHash();
 
-		LogPrint("Verifying signature", "Original transaction: %s \n Original scriptSig: %s \n Unsigned Transaction: %s \n Unsigned scriptSig: %s \n", tx.GetHash().ToString(), HexStr(scriptSig), unTx.GetHash().ToString(), HexStr(unScriptSig));
-
-		if (!pkey.Verify(unTx.GetHash(), signature)){
-			LogPrint("Invalid coinbase transaction", "Coinbase without a valid signature: %s \n", HexStr(signature));
+		if (!pkey.Verify(sigHash, vchSig)){
+			LogPrint("Invalid coinbase transaction", "Coinbase without a valid signature: %s \n hash: %s\n publicKey: %s \n", HexStr(vchSig), sigHash.ToString(), HexStr(pkey));
 			return state.DoS(100, false, REJECT_INVALID, "bad-CB-signature", false, "Coinbase signature");
 		}
 
